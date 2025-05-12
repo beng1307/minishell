@@ -1,135 +1,83 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   export.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tdocekal <tdocekal@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:41:27 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/18 14:42:27 by tdocekal         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
-
-char	*ft_strchr(const char *str, int c)
+void	export_invalid(t_minishell *shell, char *string)
 {
-	while (*str)
+	shell->exitcode = 1;
+	write(2, "export: `", 9);
+	ft_putstr_fd(string, 2);
+	write(2, "': not a valid identifier\n", 26);
+	shell->exp_valid = false;
+}
+
+int	full_export_check(char *string, t_minishell *shell)
+{
+	int	i;
+
+	i = 0;
+	if (string[i] == '=')
+		return (export_invalid(shell, string), 1);
+	while (string[i] != '\0' && string[i] != '=')
 	{
-		if (*str == (char)c)
+		if (i == 0 && ft_isdigit(string[i]) == 1)
+			return (export_invalid(shell, string), 1);
+		if (string[i] != '_')
 		{
-			return ((char *)str);
+			if (ft_isalnum(string[i]) == 0)
+				return (export_invalid(shell, string), 1);
 		}
-		str++;
+		i++;
 	}
-	if ((char)c == '\0')
-		return ((char *)str);
 	return (0);
 }
 
-char *ft_own_trim_equal(char *cpy)
+int	expp_count(t_env *current)
 {
-	char *string;
-	int i;
+	int	count;
 
-	i = 0;
-	while (cpy[i] != '=' && cpy[i] != '\0')
-		i++;
-	string = ft_substr(cpy, 0, i);
-	if (!string)
-		return (NULL);
-	ft_free(&cpy);
-	return (string);
-}
-
-void	export_var(t_minishell *shell, t_tokens *tokens, t_env *env)
-{
-	t_tokens	*current;
-	t_env		*env_copy;
-	size_t		len;
-	size_t		sec_len;
-	size_t		check;
-	char		*copy;
-
-	check = 0;
-	current = tokens;
-	env_copy = env;
-	while(current->next != NULL && current->next->type == WORD)
+	count = 0;
+	while (current)
 	{
-		current = current->next;
-		while(env_copy)
+		if (!current->expp)
 		{
-			len = ft_strlen_to(current->token);
-			sec_len = ft_strlen_to(current->token);
-			if (env_copy->path == NULL && env_copy->expp != NULL)
-			{
-				copy = ft_strjoin("declare -x ", current->token);
-				if (!copy)
-				{
-					shell->exitcode = 1;
-					return ;
-				}
-				if (ft_mini_strrchr(copy, '=') == 0)
-					copy = ft_own_trim_equal(copy);
-				if (ft_strcmp(env_copy->expp, copy) == 0)
-					check = 1;
-				if (ft_strcmp(env_copy->expp, copy) == 0 && ft_mini_strrchr(current->token, '=') == 0)
-				{
-					env_copy->path = current->token;
-					ft_free(&env_copy->expp);
-					env_copy->expp = ft_strjoin_expp("declare -x ", current->token);
-					if (!env_copy->expp)
-					{
-						free(copy);
-						shell->exitcode = 1;
-						return ;
-					}
-					check = 1;
-				}
-				free(copy);
-			}
-			else if (env_copy->path)
-			{	
-				len = ft_strlen_to(env_copy->path);
-				if (len == sec_len && ft_strncmp(env_copy->path, current->token, len) == 0)
-					check = 1;
-				if ((len == sec_len) && ft_strncmp(env_copy->path, current->token, sec_len) == 0 && ft_mini_strrchr(current->token, '=') == 0)
-				{
-					env_copy->path = current->token;
-					ft_free(&env_copy->expp);
-					env_copy->expp = ft_strjoin_expp("declare -x ", current->token);
-					if (!env_copy->expp)
-					{
-						shell->exitcode = 1;
-						return ;
-					}
-					check = 1;
-				}
-			}
-			env_copy = env_copy->next;
+			if (current->next)
+				current = current->next;
+			else
+				return (count);
 		}
-		if (check != 1)
-			env_lstadd_back(&env, ft_lstnew_spec_env(current->token));
-		env_copy = env;
-		check = 0;
+		current = current->next;
+		count++;
 	}
-	shell->exitcode = 0;
+	return (count);
 }
 
 void	ft_print_expp(t_env *env, t_minishell *shell)
 {
-	t_env *current;
-	int	count;
-	char **expp_array;
-	int	i;
+	t_env	*current;
+	int		count;
+	char	**expp_array;
+	int		i;
 
-	count = 0;
-	i = 0;
+	(void)shell;
 	current = env;
-	while (current)
-	{
-		if (!current->expp)
-			current = current->next;
-		current = current->next;
-		count++;
-	}
+	count = expp_count(current);
+	i = 0;
 	expp_array = ft_calloc(count + 1, sizeof(char *));
 	if (!expp_array)
-	{
-		shell->exitcode = 1;
-		return ;
-	}
+		terminator();
 	current = env;
-	while(i < count)
+	while (i < count)
 	{
 		if (current->expp == NULL)
 			current = current->next;
@@ -142,12 +90,16 @@ void	ft_print_expp(t_env *env, t_minishell *shell)
 	free(expp_array);
 }
 
-void	export(t_minishell *shell, t_tokens *tokens, t_env *env)
+int	export_print_check(t_tokens *tokens_og)
 {
-	if (tokens->next == NULL || tokens->next->type != WORD)
+	t_tokens	*tokens;
+
+	tokens = tokens_og;
+	while (tokens->next && tokens->type != BREAK_NODE)
 	{
-		ft_print_expp(env, shell);
-		return ;
+		tokens = tokens->next;
+		if (tokens->type == WORD)
+			return (1);
 	}
-	export_var(shell, tokens, env);
+	return (-1);
 }

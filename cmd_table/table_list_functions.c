@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   table_list_functions.c                             :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bgretic <bgretic@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/04 17:51:51 by bgretic           #+#    #+#             */
+/*   Updated: 2024/12/04 17:51:52 by bgretic          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 t_cmd_table	*table_lstnew(t_cmd *new_cmd)
@@ -43,4 +55,22 @@ void	table_lstadd_back(t_cmd_table **lst, t_cmd_table *new)
 		new->prev = lastlst;
 	}
 	new->next = NULL;
+}
+
+void	table_lstclear(
+		t_cmd_table **lst, void (del)(t_cmd **, void (del)(char ***)))
+{
+	t_cmd_table	*to_clear;
+
+	if (lst && del)
+	{
+		to_clear = *lst;
+		while (to_clear != NULL)
+		{
+			to_clear = to_clear->next;
+			del(&(*lst)->cmd, free_str_arr);
+			free(*lst);
+			*lst = to_clear;
+		}
+	}
 }

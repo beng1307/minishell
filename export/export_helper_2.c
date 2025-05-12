@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   export_helper_2.c                                  :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bgretic <bgretic@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:41:14 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/19 16:46:08 by bgretic          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 int	ft_mini_strrchr(char *str, int c)
@@ -15,7 +27,7 @@ int	ft_mini_strrchr(char *str, int c)
 	}
 	return (1);
 }
-	
+
 t_env	*ft_lstnew_spec_env(void *content)
 {
 	t_env	*new_node;
@@ -24,15 +36,23 @@ t_env	*ft_lstnew_spec_env(void *content)
 	if (new_node == NULL)
 		return (NULL);
 	if (ft_mini_strrchr(content, '=') == 0)
-		new_node->expp = ft_strjoin_expp("declare -x ", content);
-	else
-		new_node->expp = ft_strjoin("declare -x ", content);
-	if (ft_mini_strrchr(content, '=') == 0)
-		new_node->path = content;
+	{
+		new_node->path = ft_strdup(content);
+		if (!new_node->path)
+			return (free(new_node), terminator(), NULL);
+		new_node->expp = ft_strjoin_expp("declare -x ", (const char *)content);
+		if (!new_node->expp)
+			return (free_that(&new_node->path), \
+			free(new_node), terminator(), NULL);
+		new_node->next = NULL;
+		return (new_node);
+	}
 	else
 		new_node->path = NULL;
+	new_node->expp = ft_strjoin("declare -x ", content);
+	if (!new_node->expp)
+		return (free(new_node), terminator(), NULL);
 	new_node->next = NULL;
-	new_node->prev = NULL;
 	return (new_node);
 }
 
@@ -70,4 +90,19 @@ char	*ft_strjoin_expp(char const *s1, char const *s2)
 	str[i + j++] = '\"';
 	str[i + j] = '\0';
 	return (str);
+}
+
+char	*ft_own_trim_equal(char *cpy)
+{
+	char	*string;
+	int		i;
+
+	i = 0;
+	while (cpy[i] != '=' && cpy[i] != '\0')
+		i++;
+	string = ft_substr(cpy, 0, i);
+	if (!string)
+		return (NULL);
+	ft_free(&cpy);
+	return (string);
 }

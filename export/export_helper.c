@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   export_helper.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tdocekal <tdocekal@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:41:18 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/08 19:41:19 by tdocekal         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 size_t	ft_strlen_to(const char *str)
@@ -12,20 +24,20 @@ size_t	ft_strlen_to(const char *str)
 	return (length);
 }
 
-int ft_strcmp(const char *s1, const char *s2)
+int	ft_strcmp(const char *s1, const char *s2)
 {
-	while(*s1 && (*s1 == *s2))
+	while (*s1 && (*s1 == *s2))
 	{
 		s1++;
 		s2++;
 	}
-	return *(unsigned char *)s1 - *(unsigned char *)s2;
+	return (*(unsigned char *)s1 - *(unsigned char *)s2);
 }
 
 void	bubble_sort(char **array, int count)
 {
-	int i;
-	int j;
+	int	i;
+	int	j;
 
 	i = 0;
 	j = 0;
@@ -42,7 +54,7 @@ void	bubble_sort(char **array, int count)
 	}
 }
 
-void ft_print_array(char **array)
+void	ft_print_array(char **array)
 {
 	int	i;
 
@@ -56,7 +68,7 @@ void ft_print_array(char **array)
 
 void	swap(char **a, char **b)
 {
-	char *temp;
+	char	*temp;
 
 	temp = *a;
 	*a = *b;

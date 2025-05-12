@@ -6,7 +6,7 @@
 /*   By: bgretic <bgretic@student.42.fr>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/04/09 18:37:32 by bgretic           #+#    #+#             */
-/*   Updated: 2024/09/19 19:04:23 by bgretic          ###   ########.fr       */
+/*   Updated: 2024/11/06 18:00:29 by bgretic          ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,8 @@ typedef struct s_list
 	void			*content;
 	struct s_list	*next;
 }					t_list;
+
+bool				ft_isspace(int c);
 
 size_t				ft_linelen(char **str_arr);
 
@@ -80,8 +82,7 @@ void				ft_bzero(void *s, size_t n);
 
 void				*ft_calloc(size_t nmemb, size_t size);
 
-void				*ft_realloc(void *old_memory, size_t old_size,
-						size_t new_size);
+void				*ft_realloc(void *old_memory, size_t new_size);
 
 int					ft_isalnum(int argument);
 

@@ -1,34 +1,48 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   env_update.c                                       :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tdocekal <tdocekal@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:38:57 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/18 15:13:17 by tdocekal         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
-
-char *get_last_word_token(t_tokens *tokens)
+void	env_lstclear(t_env **lst, void (*del)(char **))
 {
-	t_tokens	*tok_copy;
+	t_env	*to_clear;
 
-	tok_copy = tokens;
-	while(tok_copy->next)
-		tok_copy = tok_copy->next;
-	while (tok_copy)
+	if (lst && del)
 	{
-		if (tok_copy->type == WORD)
+		to_clear = *lst;
+		while (to_clear != NULL)
 		{
-			return (tok_copy->token);
-			break ;
+			to_clear = to_clear->next;
+			del(&(*lst)->expp);
+			del(&(*lst)->path);
+			free(*lst);
+			*lst = to_clear;
 		}
-		tok_copy = tok_copy->prev;
 	}
-	if (!tok_copy->token)
-		return (NULL);
-	return (tok_copy->token);
 }
 
-void create__(t_minishell *shell, const char *token)
+void	create__(t_minishell *shell, const char *token) // allocate for _
 {
-	int i;
+	int	i;
 	int	k;
 
-	k = 0;
+	k = ft_strlen(token);
 	i = 0;
+	if (shell->upd_env)
+		free(shell->upd_env);
+	shell->upd_env = (char *)ft_calloc(k + 3, sizeof(char));
+	if (!shell->upd_env)
+		terminator();
+	k = 0;
 	shell->upd_env[k++] = '_';
 	shell->upd_env[k++] = '=';
 	while (token[i] != '\0')
@@ -36,15 +50,12 @@ void create__(t_minishell *shell, const char *token)
 	shell->upd_env[k] = '\0';
 }
 
-void	update_env(t_minishell *shell, t_tokens *tokens, t_env *env) // highly doubted 
+void	create_env_var(t_minishell *shell, t_tokens *tokens)
 {
-	t_env		*current;
 	t_tokens	*tok_copy;
-	int			sensei;
 
-	current = env;
 	tok_copy = tokens;
-	while(tok_copy->next)
+	while (tok_copy && tok_copy->next)
 		tok_copy = tok_copy->next;
 	while (tok_copy)
 	{
@@ -55,17 +66,41 @@ void	update_env(t_minishell *shell, t_tokens *tokens, t_env *env) // highly doub
 		}
 		tok_copy = tok_copy->prev;
 	}
+}
+
+void	update_env_helper(t_minishell *shell, t_env *env, int check)
+{
+	if (check == 0)
+		env_lstadd_back(&env, ft_lstnew_env_underscore(shell->upd_env));
+	shell->env = env;
+	free_that(&shell->upd_env);
+}
+
+void	update_env(t_minishell *shell, t_tokens *tokens, t_env *env)
+{
+	t_env		*current;
+	int			len_to;
+	int			check;
+
+	check = 0;
+	current = env;
+	create_env_var(shell, tokens);
 	while (current)
 	{
-		sensei = ft_strlen_to(current->path);
-		if (current->path && strncmp("_", current->path, sensei) == 0 && ft_strcmp(shell->upd_env, "_=usr/bin/env") != 0)
+		len_to = ft_strlen_to(current->path);
+		if ((current->path) && ft_strncmp("_", current->path, len_to) == 0)
 		{
-			if (*shell->upd_env)
-				current->path = shell->upd_env;
-			else
-				current->path = NULL;
+			if (shell->upd_env)
+			{
+				ft_free(&current->path);
+				current->path = ft_strdup(shell->upd_env);
+				if (!current->path)
+					return (terminator());
+			}
+			check = 1;
 			break ;
 		}
 		current = current->next;
 	}
+	update_env_helper(shell, env, check);
 }

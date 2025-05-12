@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   env_functions.c                                    :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: bgretic <bgretic@student.42.fr>            +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:38:50 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/18 18:53:11 by bgretic          ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 t_env	*env_lstlast(t_env *lst)
@@ -19,8 +31,12 @@ t_env	*ft_lstnew_env(void *content)
 	new_node = malloc(sizeof(t_env));
 	if (new_node == NULL)
 		return (NULL);
-	new_node->path = content;
+	new_node->path = ft_strdup(content);
+	if (!new_node->path)
+		return (free(new_node), terminator(), NULL);
 	new_node->expp = ft_strjoin_expp("declare -x ", content);
+	if (!new_node->expp)
+		return (free_that(&new_node->path), free(new_node), terminator(), NULL);
 	new_node->next = NULL;
 	new_node->prev = NULL;
 	return (new_node);
@@ -43,61 +59,51 @@ void	env_lstadd_back(t_env **lst, t_env *new)
 	new->next = NULL;
 }
 
-t_env *innit_env(char **envp)
+void	set_shlvl_env(t_env *env, char *shell_var)
 {
-	t_env *env;
+	int		shlvl;
+	char	*shlvl_str;
+	char	dest[PATH_MAX];
+	char	*shlvl_final;
+
+	ft_bzero(dest, PATH_MAX);
+	ft_strlcpy(dest, "SHLVL=", 7);
+	shlvl_str = ft_strchr(shell_var, '=');
+	if (shlvl_str[1] == '\0')
+		env_lstadd_back(&env, ft_lstnew_env("SHLVL=1"));
+	shlvl_str++;
+	shlvl = ft_atoi(shlvl_str);
+	shlvl++;
+	shlvl_str = ft_itoa(shlvl);
+	if (!shlvl_str)
+		return (ft_free(&shlvl_str), terminator());
+	shlvl_final = ft_strjoin(dest, shlvl_str);
+	if (!shlvl_final)
+		return (ft_free(&shlvl_str), terminator());
+	ft_free(&shlvl_str);
+	env_lstadd_back(&env, ft_lstnew_env(shlvl_final));
+	ft_free(&shlvl_final);
+}
+
+t_env	*innit_env(t_minishell *shell, char **envp)
+{
+	t_env	*env;
 	size_t	len_to;
 	size_t	i;
 
 	i = 0;
 	env = NULL;
-	while(envp[i] != NULL)
+	while (envp[i] != NULL)
 	{
 		len_to = ft_strlen_to(envp[i]);
-		if (strncmp("_", envp[i], len_to) == 0)
+		if (ft_strncmp("_", envp[i], len_to) == 0)
 			env_lstadd_back(&env, ft_lstnew_env_underscore(envp[i]));
+		else if (ft_strncmp("SHLVL", envp[i], len_to) == 0)
+			set_shlvl_env(env, envp[i]);
 		else
 			env_lstadd_back(&env, ft_lstnew_env(envp[i]));
 		i++;
+		shell->env = env;
 	}
 	return (env);
 }
-
-void	env_lstclear(t_env **lst, void (*del)(char **))
-{
-	t_env	*to_clear;
-
-	if (lst && del)
-	{
-		to_clear = *lst;
-		while (to_clear != NULL)
-		{
-			to_clear = to_clear->next;
-			del(&(*lst)->expp);
-			del(&(*lst)->path);
-			free(*lst);
-			*lst = to_clear;
-		}
-	}
-}
-
-/* void	ft_lstdelone(t_env **lst, void (*del)(char **))
-{
-	if (lst && del)
-	{
-		del(&(*lst)->path);
-		del(&(*lst)->expp);
-		free(*lst);
-	}
-} */
-
-/* void	env_unset(t_env **lst)
-{
-	(*lst)->prev->next = (*lst)->next;
-	if (lst)
-	{
-		ft_free(&(*lst)->path);
-		ft_free(&(*lst)->expp);
-		free(*lst);
-	}
-} */

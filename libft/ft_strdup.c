@@ -18,10 +18,10 @@ char	*ft_strdup(const char *s)
 	size_t		len;
 
 	len = ft_strlen(s) + 1;
-	str = malloc(len);
+	str = ft_calloc(len, sizeof(char));
 	if (str == NULL)
 		return (NULL);
-	str = ft_memcpy(str, s, len);
+	ft_memcpy(str, s, len);
 	return ((char *)(str));
 }
 

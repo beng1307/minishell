@@ -1,3 +1,15 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   syntax.c                                           :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tdocekal <tdocekal@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/08 19:43:26 by tdocekal          #+#    #+#             */
+/*   Updated: 2024/12/08 19:43:27 by tdocekal         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
 int	just_whitespace(t_minishell *shell)
@@ -15,42 +27,49 @@ int	just_whitespace(t_minishell *shell)
 void	is_redirection(t_minishell *shell, int i, char *ident)
 {
 	if (ft_strncmp(ident, "heredoc", 7) == 0)
-		heredoc_check_inp(shell, ++i);
+	{
+		i++;
+		heredoc_check_inp(shell, i, (i - 2));
+	}
 	else if (ft_strncmp(ident, "append", 6) == 0)
-		append_check_inp(shell, ++i);
+	{
+		i++;
+		append_check_inp(shell, i, (i - 2));
+	}
 	else if (ft_strncmp(ident, "in", 2) == 0)
-		in_check_inp(shell, i);
+		in_check_inp(shell, i, (i - 1));
 	else if (ft_strncmp(ident, "out", 3) == 0)
-		out_check_inp(shell, i);
+		out_check_inp(shell, i, (i - 1));
 	else if (ft_strncmp(ident, "pipe", 4) == 0)
-		pipe_check_inp(shell, i);
+		pipe_check_inp(shell, i, (i - 1));
 }
 
-int	redirection_check_helper(t_minishell *shell, int i)
+int	redirection_check_helper(t_minishell *shell, int i, bool in_quotes)
 {
 	int	j;
 
 	j = 0;
-	if ((shell->input[i] == '<') && (shell->input[i + 1] == '<'))
+	if ((shell->input[i] == '<') && (shell->input[i + 1] == '<') && !in_quotes)
 	{
 		is_redirection(shell, i, "heredoc");
 		j++;
 	}
-	else if ((shell->input[i] == '>') && (shell->input[i + 1] == '>'))
+	else if ((shell->input[i] == '>')
+		&& (shell->input[i + 1] == '>') && !in_quotes)
 	{
 		is_redirection(shell, i, "append");
 		j++;
 	}
-	else if (shell->input[i] == '>')
+	else if (shell->input[i] == '>' && !in_quotes)
 		is_redirection(shell, i, "out");
-	else if (shell->input[i] == '<')
+	else if (shell->input[i] == '<' && !in_quotes)
 		is_redirection(shell, i, "in");
-	else if (shell->input[i] == '|')
+	else if (shell->input[i] == '|' && !in_quotes)
 		is_redirection(shell, i, "pipe");
 	return (j);
 }
 
-int redirections_check(t_minishell *shell)
+int	redirections_check(t_minishell *shell)
 {
 	int	i;
 
@@ -58,20 +77,17 @@ int redirections_check(t_minishell *shell)
 	i = 0;
 	while (shell->input && (shell->input[i] != '\n' && shell->input[i] != '\0'))
 	{
-		while (shell->input[i] == ' ' || shell->input[i] == '\t')
-			i++;
-		i += redirection_check_helper(shell, i);
+		i += redirection_check_helper(shell, i, is_in_quotes(shell->input[i]));
 		if (shell->error->e != -999)
 		{
 			if (shell->input[shell->error->e] == '\n')
-				ft_printf("syntax error near unexpected token : newline\n");
+				unexpected_token_newline();
 			else if (shell->input[shell->error->e] == '\0')
-				ft_printf("syntax error near unexpected token : newline\n");
+				unexpected_token_newline();
 			else
-				ft_printf("syntax error near unexpected token : %c\n",\
-				shell->input[shell->error->e]);
-			rl_on_new_line();
+				unexpected_token(shell);
 			shell->exitcode = 2;
+			shell->is_here_app = 0;
 			return (1);
 		}
 		i++;
@@ -83,7 +99,6 @@ int	input_checks(t_minishell *shell)
 {
 	if (just_whitespace(shell) == 1)
 	{
-		rl_on_new_line();
 		shell->exitcode = 0;
 		return (1);
 	}

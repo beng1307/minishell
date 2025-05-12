@@ -1,73 +1,52 @@
+/* ************************************************************************** */
+/*                                                                            */
+/*                                                        :::      ::::::::   */
+/*   cd.c                                               :+:      :+:    :+:   */
+/*                                                    +:+ +:+         +:+     */
+/*   By: tdocekal <tdocekal@student.42.fr>          +#+  +:+       +#+        */
+/*                                                +#+#+#+#+#+   +#+           */
+/*   Created: 2024/12/04 17:50:38 by bgretic           #+#    #+#             */
+/*   Updated: 2024/12/23 19:34:49 by tdocekal         ###   ########.fr       */
+/*                                                                            */
+/* ************************************************************************** */
+
 #include "../minishell.h"
 
-static t_env	*get_pwd_node(t_env *env)
+int	count_cd_args(t_tokens *tokens)
 {
-	t_env	*pwd_node;
-
-	pwd_node = env;
-	while (pwd_node)
-	{
-		if (ft_strncmp(pwd_node->path, "PWD=", 4) == 0)
-			return (pwd_node);
-		pwd_node = pwd_node->next;
-	}
-	return (NULL);
+	if (!tokens || tokens->type == BREAK_NODE || tokens->type == INPUT
+		|| tokens->type == OUTPUT || tokens->type == HEREDOC
+		|| tokens->type == APPEND)
+		return (0);
+	return (1 + count_cd_args(tokens->next));
 }
 
-static int	update_pwd(t_minishell *shell, t_env *env)
+void	error_wrong_path(char *path)
+{
+	write(2, "bash: cd: ", 10);
+	perror(path);
+}
+
+void	cd(t_minishell *shell, t_tokens *token, t_env *env)
 {
 	char	cwd[PATH_MAX];
-	t_env	*pwd_node;
 
-	pwd_node = get_pwd_node(env);
+	shell->exitcode = 0;
 	if (!getcwd(cwd, PATH_MAX))
-		return (perror("getcwd"), shell->exitcode = 1, 1);
-	if (!pwd_node)
-		env_lstadd_back(&env, ft_lstnew_env(ft_strjoin("PWD=", cwd)));
-	else
 	{
-		free(pwd_node->path);
-		pwd_node->path = ft_strjoin("PWD=", cwd);
-		// if (!pwd_node->path)
-		// 	implement exit_function
-	}
-	return (0);
-}
-
-static void	go_to_path(t_minishell *shell, t_env *env, char *path)
-{
-	if (chdir(path) == -1)
-	{
+		perror("getcwd");
 		shell->exitcode = 1;
-		perror("chdir");
 		return ;
 	}
-	update_pwd(shell, env);
-}
-
-static void	go_to_home_directory(t_minishell *shell, t_env *env)
-{
-	char	*path;
-
-	path = getenv("HOME");
-	if (!path)
+	if (!token->next || token->next->type == BREAK_NODE)
+		go_to_home_directory(shell, env, cwd);
+	else if (count_cd_args(token) > 2)
 	{
+		ft_putendl_fd("bash: cd: too many arguments", 2);
 		shell->exitcode = 1;
-		perror("getenv");
-		return ;
 	}
-	if (chdir(path) == -1)
-	{
-		shell->exitcode = 1;
-		perror("chdir");
-	}
-	update_pwd(shell, env);
-}
-
-void	cd(t_minishell *shell, t_env *env, char *path)
-{
-	if (!path)
-		go_to_home_directory(shell, env);
+	else if (ft_cmp(token->next->token, "-"))
+		go_to_old_path(shell, env);
 	else
-		go_to_path(shell, env, path);
+		go_to_path(shell, env, token->next->token, cwd);
 }

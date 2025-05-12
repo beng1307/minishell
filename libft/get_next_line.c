@@ -32,7 +32,7 @@ static void	get_line(char **stash, char **line, int *error)
 
 static int	fill_stash(char **stash, char *buffer, int readed_chars)
 {
-	*stash = ft_realloc(*stash, ft_strlen(*stash) + 1, (ft_strlen(*stash)
+	*stash = ft_realloc(*stash, (ft_strlen(*stash)
 				+ readed_chars) + 1);
 	if (!*stash)
 		return (1);
